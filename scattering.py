@@ -1,55 +1,64 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #--encoding: utf-8 --
+"""
+scattering
+==========
+Show the trajectory of a classical particle scattered by a spherically
+symmetric central potential
+
+V(r) =  / 0          if r > radius
+        \ -potential if r < radius
+
+"""
+
 import pygame
-from math import *
+from math import asin, sqrt, cos, sin
 
-# Scattering por un pozo rectangular de potencial esféricamente simétrico
-# V(r) =    0   si r > a
-#           -Vo si r < a
+# Particle mass [kg]
+mass = 1.0
+# Energy [J]
+energy = 1.0
+# Potential well radius [m]
+radius = 1.0
+# Potential value [J]
+potential = energy/2.0
 
-# Masa de partículas
-m = 1.0
-# Energía con que vienen
-E = 1.0
-# Radio del pozo
-a = 1.0
-# Potencial
-Vo = E/2.0
+width, height = 800, 600
+# Pixels per metre
+scale = 160 
+circle_color = (255, 0, 0)
+trajectory_color = (255, 255, 255)
 
-(ancho,alto) = (800,600)
-# Pixeles por metro
-escala = 160
-def pantalla(x,y):
-    return (int(ancho/2+escala*x),int(alto/2-escala*y))
-def coordenadas(pos):
-    (x,y) = pos
-    return ((x-ancho/2.0)/escala,(alto/2.0-y)/escala)
-color_circulo = (255,0,0)
-color_camino = (255,255,255)
+# Functions to convert between coordinate systems
+def to_screen(x, y):
+    return (int(width/2+scale*x), int(height/2-scale*y))
+def from_screen(pos):
+    (x, y) = pos
+    return ((x-width/2.0)/scale, (height/2.0-y)/scale)
 
 pygame.init()
-ventana = pygame.display.set_mode((800,600))
-def particula(s):
-    # Calculo la intersección con el círculo
-    x_choque = -sqrt(a**2-s**2)
-    pygame.draw.line(ventana,color_camino,pantalla(-10,s),pantalla(x_choque,s))
-    # Nueva velocidad
-    v_inf = sqrt(E*2/m)
-    v2 = v_inf * sqrt(1+Vo/E)
-    alfa = asin(s/a)
-    beta = asin(s/a/sqrt(1+Vo/E))
-    angulo = 2*beta-alfa
-    pygame.draw.line(ventana,color_camino,pantalla(x_choque,s),
-                     pantalla(a*cos(angulo),a*sin(angulo)))
-    # Velocidad final
-    angulof = 2*beta-2*alfa
-    pygame.draw.line(ventana,color_camino,pantalla(a*cos(angulo),a*sin(angulo)),
-                    pantalla(10*cos(angulof),10*sin(angulof)))
+window = pygame.display.set_mode((800, 600))
+def draw_trajectory(impact_parameter):
+    # Calculate intersection with potential well
+    x_intersection = -sqrt(radius**2-impact_parameter**2)
+    pygame.draw.line(window, trajectory_color, 
+                     to_screen(-10, impact_parameter),
+                     to_screen(x_intersection, impact_parameter))
+    # Velocity inside the well
+    v_inf = sqrt(energy*2/mass)
+    # Varius angles
+    alfa = asin(s/radius)
+    beta = asin(s/radius/sqrt(1+potential/energy))
+    angle = 2*beta-alfa
+    pygame.draw.line(window, trajectory_color,
+                     to_screen(x_intersection, impact_parameter),
+                     to_screen(radius*cos(angle), radius*sin(angle)))
+    # Final angle
+    anglef = 2*beta-2*alfa
+    pygame.draw.line(window, trajectory_color,
+                     to_screen(radius*cos(angle), radius*sin(angle)),
+                     to_screen(10*cos(anglef), 10*sin(anglef)))
     return
-
-particula(a/2)
-
-pygame.display.flip()
 
 while True:
     for event in pygame.event.get(): 
@@ -57,16 +66,11 @@ while True:
             from os import sys
             sys.exit(0) 
         elif event.type == pygame.MOUSEMOTION:
-            ventana.fill((0,0,0))
-            # El círculo del potencial
-            pygame.draw.circle(ventana,color_circulo,pantalla(0,0),
-                               int(escala*a),2)
-            # Partícula que entra
-            s = coordenadas(pygame.mouse.get_pos())[1]
-            if s<a:
-                particula(s)
+            window.fill((0, 0, 0))
+            # Draw potential well boundary
+            pygame.draw.circle(window, circle_color, to_screen(0, 0),
+                               int(scale*radius), 2)
+            s = from_screen(pygame.mouse.get_pos())[1]
+            if abs(s)<radius:
+                draw_trajectory(s)
             pygame.display.flip()
-        else: 
-            pass
-            #print event 
-
